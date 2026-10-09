@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<defs><mask id="m"><rect width="128" height="128" fill="#fff"/><circle cx="64" cy="64" r="53" fill="#000"/></mask></defs>
+<circle cx="64" cy="64" r="61" fill="#161b2e" mask="url(#m)"/>
+<g transform="translate(64 60) scale(0.84) translate(-64 -64)" fill="none" stroke="#161b2e" stroke-linecap="round" stroke-linejoin="round">
+<g transform="rotate(-28 64 64)"><path d="M64 114 V18" stroke-width="8"/><path d="M62 22 C50 16 40 28 24 21 L31 36 L24 51 C40 58 50 46 62 52 Z" fill="#161b2e" stroke-width="4"/></g>
+<g transform="rotate(28 64 64)"><path d="M64 112 V44 M48 20 V34 Q48 46 64 46 Q80 46 80 34 V20 M64 16 V46" stroke-width="9"/></g>
+</g>
+</svg>

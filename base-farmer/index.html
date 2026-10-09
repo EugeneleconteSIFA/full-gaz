@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#181c26" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Lilita+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Base Farmer</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #181c26;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        overscroll-behavior: none;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+      }
+      /* Loading screen (roadmap step 8): plain HTML/CSS, shown from the first bytes, in the
+         interface's look (docs/13); removed by main.ts when the first screen is up. */
+      #loader {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #1b2340;
+        font-family: "Lilita One", Fredoka, system-ui, sans-serif;
+        transition: opacity 0.35s;
+      }
+      #loader.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loader h1 {
+        margin: 0;
+        font-size: min(13vw, 64px);
+        font-weight: normal;
+        color: #ffc93c;
+        -webkit-text-stroke: 3px #161b2e;
+        paint-order: stroke fill;
+        text-shadow: 0 5px 0 #161b2e;
+        letter-spacing: 1px;
+      }
+      #loader .bar {
+        width: min(70vw, 280px);
+        height: 18px;
+        border: 3px solid #161b2e;
+        border-radius: 12px;
+        background: #2a3658;
+        overflow: hidden;
+        box-shadow: 0 4px 0 rgba(22, 27, 46, 0.45);
+      }
+      #loader .fill {
+        height: 100%;
+        width: 8%;
+        border-radius: 8px;
+        background: linear-gradient(#ffd96b, #ffc93c 55%, #d9921c);
+        transition: width 0.4s;
+      }
+      #loader p {
+        margin: 0;
+        font: bold 14px Fredoka, system-ui, sans-serif;
+        color: #b9c3de;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">
+      <h1>BASE FARMER</h1>
+      <div class="bar"><div class="fill"></div></div>
+      <p>Chargement…</p>
+    </div>
+    <div id="game"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
