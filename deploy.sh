@@ -14,7 +14,9 @@ node tests/generator.test.js 120 >/dev/null
 node tests/server.test.mjs >/dev/null
 
 $SSH "$HOST" 'mkdir -p /srv/latraverse/site /srv/latraverse/api/server'
+node tools/render_og.js >/dev/null
 rsync -az -e "$SSH" index.html favicon.svg icon-180.png og.png "$HOST:/srv/latraverse/site/"
+rsync -az --delete -e "$SSH" og/ "$HOST:/srv/latraverse/site/og/"
 rsync -az -e "$SSH" server/server.mjs "$HOST:/srv/latraverse/api/server/"
 
 if [[ "${1:-}" == "--server" ]]; then

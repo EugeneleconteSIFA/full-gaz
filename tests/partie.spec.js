@@ -1,4 +1,4 @@
-/* Partie complète au doigt : trajet optimal, choix de ligne, validation, résultat, sauvegarde. */
+/* Partie complète (toucher sur téléphone et tablette, clic sur ordinateur) : trajet optimal, choix de ligne, validation, résultat, sauvegarde. */
 const { test, expect } = require('@playwright/test');
 
 let errors;
@@ -16,6 +16,13 @@ async function noHorizontalScroll(page) {
   const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(over, 'défilement horizontal de la page').toBeLessThanOrEqual(0);
 }
+/* Sur ordinateur, tout tient dans la fenêtre : la page ne défile pas, seule la colonne de droite peut défiler. */
+async function fitsOnDesktop(page) {
+  const v = page.viewportSize();
+  if (v.width < 1024) return;
+  const over = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  expect(over, 'défilement vertical de la page sur ordinateur').toBeLessThanOrEqual(0);
+}
 
 /* Le trajet optimal de la grille affichée, calculé par la page elle-même. */
 async function optimal(page) {
@@ -29,16 +36,17 @@ async function optimal(page) {
 
 async function play(page, opt) {
   for (let k = 0; k < opt.lines.length; k++) {
-    await page.locator('.sta[data-id="' + opt.nodes[k + 1] + '"]').tap();
+    await page.locator('.sta[data-id="' + opt.nodes[k + 1] + '"]').click();
     const choose = page.locator('#choose');
     if (await choose.isVisible()) {
-      await choose.getByRole('button', { name: new RegExp('^' + opt.lines[k] + ' ·') }).tap();
+      await choose.getByRole('button', { name: new RegExp('^' + opt.lines[k] + ' ·') }).click();
     }
   }
 }
 
 test('partie complète du jour : optimal, partage, sauvegarde', async ({ page }) => {
   await noHorizontalScroll(page);
+  await fitsOnDesktop(page);
   await expect(page.locator('.sta')).toHaveCount(25);
   await expect(page.locator('#validate')).toBeDisabled();
 
@@ -48,10 +56,11 @@ test('partie complète du jour : optimal, partage, sauvegarde', async ({ page })
   await expect(page.locator('#validate')).toBeEnabled();
   await noHorizontalScroll(page);
 
-  await page.locator('#validate').tap();
+  await page.locator('#validate').click();
   await expect(page.locator('#result')).toBeVisible();
   await expect(page.locator('#actions')).toBeHidden();
   await expect(page.locator('#pct')).toHaveText('0 %');
+  await fitsOnDesktop(page);
   const share = await page.locator('#shareText').textContent();
   expect(share).toMatch(/^La Traverse n°\d+/);
   expect(share).toContain('Trajet optimal');
@@ -69,11 +78,11 @@ test('partie complète du jour : optimal, partage, sauvegarde', async ({ page })
 
 test('détour, annulation et choix de ligne', async ({ page }) => {
   const opt = await optimal(page);
-  await page.locator('.sta[data-id="' + opt.nodes[1] + '"]').tap();
+  await page.locator('.sta[data-id="' + opt.nodes[1] + '"]').click();
   const choose = page.locator('#choose');
-  if (await choose.isVisible()) await choose.getByRole('button').first().tap();
+  if (await choose.isVisible()) await choose.getByRole('button').first().click();
   await expect(page.locator('#count')).toHaveText('2');
-  await page.locator('#undo').tap();
+  await page.locator('#undo').click();
   await expect(page.locator('#count')).toHaveText('1');
   await expect(page.locator('#undo')).toBeDisabled();
 
@@ -82,13 +91,13 @@ test('détour, annulation et choix de ligne', async ({ page }) => {
     const P = generate(new Date().toLocaleDateString('sv-SE'));
     return P.nodes.find(n => n.id !== s && !P.adj[s].some(a => a.to === n.id)).id;
   }, opt.s);
-  await page.locator('.sta[data-id="' + far + '"]').tap();
+  await page.locator('.sta[data-id="' + far + '"]').click();
   await expect(page.locator('#status')).toContainText(/liaison/);
   await expect(page.locator('#count')).toHaveText('1');
 });
 
 test('entraînement : nouvelle grille jouable', async ({ page }) => {
-  await page.locator('#m-train').tap();
+  await page.locator('#m-train').click();
   await expect(page.locator('#m-train')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#sub')).toContainText('Entraînement');
   await noHorizontalScroll(page);
@@ -98,16 +107,16 @@ test('classement : créer un groupe, jouer, se voir classé', async ({ page }) =
   await expect(page.locator('#friends')).toBeVisible();
   await page.locator('#fPseudo').fill('Testeur');
   await page.locator('#fName').fill('Groupe e2e');
-  await page.locator('#fCreate').tap();
+  await page.locator('#fCreate').click();
   await expect(page.locator('#fGCode')).toHaveText(/^[A-Z0-9]{6}$/);
   await expect(page.locator('#fWait')).toBeVisible();
 
   await play(page, await optimal(page));
-  await page.locator('#validate').tap();
+  await page.locator('#validate').click();
   await expect(page.locator('#fList li')).toHaveCount(1);
   await expect(page.locator('#fList li').first()).toContainText('Testeur');
   await expect(page.locator('#fList li').first()).toContainText('0 %');
-  await page.locator('#fTabWeek').tap();
+  await page.locator('#fTabWeek').click();
   await expect(page.locator('#fNote')).toContainText('depuis lundi');
   await noHorizontalScroll(page);
 });
@@ -115,15 +124,15 @@ test('classement : créer un groupe, jouer, se voir classé', async ({ page }) =
 test('recommencer la grille du jour après le résultat : hors classement', async ({ page }) => {
   const opt = await optimal(page);
   await play(page, opt);
-  await page.locator('#validate').tap();
+  await page.locator('#validate').click();
   const saved = await page.evaluate(() => JSON.stringify(localStorage));
-  await page.locator('#replay').tap();
+  await page.locator('#replay').click();
   await expect(page.locator('#m-train')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#sub')).toContainText('hors classement');
   await expect(page.locator('#count')).toHaveText('1');
   await expect(page.locator('#map')).toHaveClass(/focus/);
   await play(page, opt);
-  await page.locator('#validate').tap();
+  await page.locator('#validate').click();
   await expect(page.locator('#pct')).toHaveText('0 %');
   expect(await page.evaluate(() => JSON.stringify(localStorage))).toBe(saved);
   await noHorizontalScroll(page);

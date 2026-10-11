@@ -330,6 +330,33 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
 .share-row .btn { flex: 1 1 160px; }
 .copied { flex-basis: 100%; font-size: 13px; color: var(--c-success); min-height: 1em; }
 
+/* Disposition : une colonne sur téléphone (consigne, info trafic, plan, puis le reste) ;
+   sur ordinateur, le plan à gauche et les commandes à droite, sans défilement de la page. */
+.play { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.side { display: contents; }
+.side > * { order: 4; }
+.side > .brief { order: 1; }
+.side > .notice { order: 2; }
+.play > .mapcard { order: 3; }
+@media (min-width: 1024px) and (min-height: 620px) {
+  html, body { height: 100%; }
+  body { overflow: hidden; padding: 14px 16px; }
+  main { max-width: 1560px; height: 100%; }
+  .play { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 460px); gap: 14px; }
+  .play > .mapcard { order: 0; display: flex; flex-direction: column; min-height: 0; }
+  .play > .side { order: 1; }
+  .board { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  #map { min-width: 0; width: 100%; height: 100%; }
+  .scrollhint { display: none; }
+  .legend { padding: 9px 14px 11px; font-size: 12px; }
+  .side { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 4px 4px 0; scrollbar-width: thin; }
+  .side > * { flex: 0 0 auto; }
+  .brief { font-size: 15px; }
+  .hud dd { font-size: 22px; }
+  .actions .btn, .actions .btn.primary { flex: 1 1 calc(50% - 8px); }
+  .actions .btn.primary { flex-basis: 100%; }
+}
+
 /* Classement entre amis */
 .friends { display: flex; flex-direction: column; gap: 12px; padding: 15px; border: 1px solid var(--c-border); border-radius: var(--r-lg); background: var(--c-surface); min-width: 0; }
 .friends h2 { margin: 0; font: 700 20px/1.1 var(--font-title); letter-spacing: -.04em; }
@@ -393,13 +420,7 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
     </div>
   </header>
 
-  <p class="brief" id="brief"></p>
-
-  <div class="notice" id="notice">
-    <p class="tag" id="noticeTag">Info trafic</p>
-    <p class="text" id="noticeText"></p>
-  </div>
-
+  <div class="play">
   <section class="mapcard" aria-label="Plan de Lille">
     <div class="board">
       <svg id="map" role="group" aria-label="Plan schématique de Lille : métro, bus et rues"></svg>
@@ -413,6 +434,14 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
       <span class="wait" id="waitInfo"></span>
     </div>
   </section>
+  <div class="side">
+  <p class="brief" id="brief"></p>
+
+  <div class="notice" id="notice">
+    <p class="tag" id="noticeTag">Info trafic</p>
+    <p class="text" id="noticeText"></p>
+  </div>
+
 
   <div class="choose" id="choose" hidden>
     <p id="chooseQ"></p>
@@ -497,6 +526,8 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
     </div>
     <p class="status" id="fMsg" role="status"></p>
   </section>
+  </div>
+  </div>
 </main>
 
 <script>
