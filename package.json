@@ -1,0 +1,12 @@
+{
+  "name": "correspondance",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:gen && npm run test:e2e",
+    "test:gen": "node tests/generator.test.js",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
+}
