@@ -93,3 +93,21 @@ test('entraînement : nouvelle grille jouable', async ({ page }) => {
   await expect(page.locator('#sub')).toContainText('Entraînement');
   await noHorizontalScroll(page);
 });
+
+test('classement : créer un groupe, jouer, se voir classé', async ({ page }) => {
+  await expect(page.locator('#friends')).toBeVisible();
+  await page.locator('#fPseudo').fill('Testeur');
+  await page.locator('#fName').fill('Groupe e2e');
+  await page.locator('#fCreate').tap();
+  await expect(page.locator('#fGCode')).toHaveText(/^[A-Z0-9]{6}$/);
+  await expect(page.locator('#fWait')).toBeVisible();
+
+  await play(page, await optimal(page));
+  await page.locator('#validate').tap();
+  await expect(page.locator('#fList li')).toHaveCount(1);
+  await expect(page.locator('#fList li').first()).toContainText('Testeur');
+  await expect(page.locator('#fList li').first()).toContainText('0 %');
+  await page.locator('#fTabWeek').tap();
+  await expect(page.locator('#fNote')).toContainText('depuis lundi');
+  await noHorizontalScroll(page);
+});

@@ -178,6 +178,32 @@ h1 { margin: 0; font: 700 34px/1 var(--font-display); text-transform: uppercase;
 .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
 .copied { font-size: 14px; color: var(--muted); }
 
+/* Classement entre amis */
+.friends { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.friends h2 { margin: 0; font: 700 22px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.friends p { margin: 0; }
+.friends .muted { color: var(--muted); font-size: 15px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 160px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field input { font: 500 16px var(--font-body); color: var(--ink); background: var(--bg); border: 2px solid var(--rule); border-radius: 8px; padding: 10px 12px; min-height: 46px; width: 100%; }
+.field input:focus-visible { border-color: var(--ink); outline: none; }
+.field input.code { font-family: var(--font-data); text-transform: uppercase; letter-spacing: .12em; }
+.row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.or { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.gcode { font: 500 18px var(--font-data); letter-spacing: .12em; }
+.tabs { display: inline-flex; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; align-self: flex-start; }
+.tabs button { background: transparent; border: 0; padding: 8px 14px; font-weight: 600; font-size: 14px; min-height: 40px; }
+.tabs button + button { border-left: 2px solid var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.board-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.board-list li { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto auto; gap: 10px; align-items: baseline; padding: 9px 2px; border-bottom: 1px solid var(--rule); }
+.board-list li.me { font-weight: 700; }
+.board-list .rk { font: 500 15px var(--font-data); color: var(--muted); }
+.board-list .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-list .v { font: 500 15px var(--font-data); font-variant-numeric: tabular-nums; text-align: right; }
+.board-list .t { font: 500 13px var(--font-data); color: var(--muted); text-align: right; }
+.board-list .none { display: block; color: var(--muted); }
+
 @media (max-width: 480px) {
   h1 { font-size: 26px; letter-spacing: .02em; }
   .mark { width: 38px; height: 38px; }
@@ -262,6 +288,42 @@ h1 { margin: 0; font: 700 34px/1 var(--font-display); text-transform: uppercase;
         <span class="copied" id="copied" role="status"></span>
       </div>
     </div>
+  </section>
+
+  <section class="friends" id="friends" hidden aria-labelledby="fTitle">
+    <h2 id="fTitle">Classement entre amis</h2>
+    <div id="fJoin">
+      <p class="muted">Crée un groupe et partage son code, ou rejoins celui de tes potes. Aucun compte : juste un pseudo.</p>
+      <div class="row" style="margin-top: 12px">
+        <div class="field"><label for="fPseudo">Ton pseudo</label><input id="fPseudo" maxlength="20" autocomplete="nickname" autocapitalize="off"></div>
+      </div>
+      <div class="row" style="margin-top: 12px">
+        <div class="field"><label for="fCode">Code du groupe</label><input id="fCode" class="code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+        <button type="button" class="btn" id="fJoinBtn">Rejoindre</button>
+      </div>
+      <p class="or" style="margin-top: 12px">ou</p>
+      <div class="row" style="margin-top: 8px">
+        <div class="field"><label for="fName">Nom du nouveau groupe</label><input id="fName" maxlength="40" placeholder="Amphi B, TD 3…"></div>
+        <button type="button" class="btn" id="fCreate">Créer</button>
+      </div>
+    </div>
+    <div id="fGroup" hidden>
+      <p><strong id="fGName"></strong> · code <span class="gcode" id="fGCode"></span></p>
+      <div class="share-row" style="margin-top: 0">
+        <button type="button" class="btn" id="fShare">Inviter</button>
+        <button type="button" class="btn" id="fLeave">Quitter le groupe</button>
+      </div>
+      <p class="muted" id="fWait">Le classement s’affiche une fois ta grille du jour validée.</p>
+      <div id="fBoards" hidden>
+        <div class="tabs" role="tablist" aria-label="Période">
+          <button type="button" role="tab" id="fTabDay" aria-selected="true">Aujourd’hui</button>
+          <button type="button" role="tab" id="fTabWeek" aria-selected="false">Semaine</button>
+        </div>
+        <ol class="board-list" id="fList" style="margin-top: 12px"></ol>
+        <p class="muted" id="fNote" style="margin-top: 8px"></p>
+      </div>
+    </div>
+    <p class="status" id="fMsg" role="status"></p>
   </section>
 </main>
 
@@ -596,6 +658,7 @@ function generate(key) {
     $('waitInfo').textContent = 'Les chiffres sont des minutes. Monter dans un métro ou un bus coûte une attente : métro ' + P.board.metro + ' min, bus ' + P.board.bus + ' min, rue 0 min.';
     drawMap();
     update();
+    syncFriends();
   }
 
   /* Placement des noms de lieux : on teste huit positions et on garde celle qui gêne le moins. */
@@ -813,6 +876,7 @@ function generate(key) {
     S.done = true;
     if (S.mode === 'daily') save('corr:' + NET_VERSION + ':' + S.key, { path: S.path, via: S.via, elapsed: S.elapsed });
     update();
+    syncFriends();
     $('result').scrollIntoView({ block: 'nearest' });
   }
 
@@ -848,7 +912,7 @@ function generate(key) {
     } catch (e) {
       var r = document.createRange(); r.selectNodeContents(el);
       var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-      $('copied').textContent = 'Texte sélectionné : copiez-le à la main.';
+      $('copied').textContent = 'Texte sélectionné : copie-le à la main.';
     }
     setTimeout(function () { $('copied').textContent = ''; }, 2500);
   }
@@ -867,6 +931,104 @@ function generate(key) {
   $('copy').addEventListener('click', copy);
   $('again').addEventListener('click', function () { start('train'); window.scrollTo(0, 0); });
   $('m-daily').addEventListener('click', function () { if (S.mode !== 'daily') start('daily'); });
+
+  /* Classement entre amis : actif seulement si l'API répond (page hébergée sur le serveur du jeu). */
+  var F = { api: false, tab: 'day', board: null };
+  function fget(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function fset(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function player() {
+    var p = fget('corr:player');
+    if (!/^[a-f0-9]{32}$/.test(p || '')) {
+      var b = new Uint8Array(16); crypto.getRandomValues(b);
+      p = Array.from(b, function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+      fset('corr:player', p);
+    }
+    return p;
+  }
+  function group() { try { return JSON.parse(fget('corr:group')); } catch (e) { return null; } }
+  async function api(method, url, body) {
+    var r = await fetch(url, { method: method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    var j = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(j.error || 'Le serveur ne répond pas.');
+    return j;
+  }
+  function fmsg(m) { $('fMsg').textContent = m || ''; }
+  function renderFriends() {
+    var g = group(), daily = S.mode === 'daily';
+    $('friends').hidden = !F.api || !daily;
+    if ($('friends').hidden) return;
+    $('fJoin').hidden = !!g; $('fGroup').hidden = !g;
+    if (!g) { $('fPseudo').value = $('fPseudo').value || fget('corr:pseudo') || ''; return; }
+    $('fGName').textContent = g.name; $('fGCode').textContent = g.code;
+    $('fWait').hidden = S.done; $('fBoards').hidden = !S.done || !F.board;
+    if (!F.board) return;
+    $('fTabDay').setAttribute('aria-selected', F.tab === 'day'); $('fTabWeek').setAttribute('aria-selected', F.tab === 'week');
+    var list = $('fList'), me = fget('corr:pseudo'), rows = F.tab === 'day' ? F.board.today : F.board.week;
+    list.textContent = '';
+    function cell(li, cls, txt) { var s = document.createElement('span'); s.className = cls; s.textContent = txt; li.appendChild(s); }
+    rows.forEach(function (r, i) {
+      var li = document.createElement('li');
+      if (r.pseudo === me) li.className = 'me';
+      cell(li, 'rk', (i + 1) + '.'); cell(li, 'who', r.pseudo);
+      if (F.tab === 'day') { cell(li, 'v', r.pct === 0 ? '0 %' : '+' + r.pct + ' %'); cell(li, 't', fmt(r.elapsed)); }
+      else { cell(li, 'v', '+' + r.total + ' %'); cell(li, 't', r.played + ' j'); }
+      list.appendChild(li);
+    });
+    if (!rows.length) { var li = document.createElement('li'); cell(li, 'none', 'Personne pour l’instant.'); list.appendChild(li); }
+    $('fNote').textContent = F.tab === 'day'
+      ? F.board.today.length + ' sur ' + F.board.members + ' membre' + (F.board.members > 1 ? 's' : '') + ' ont joué. Égalité : le chrono départage.'
+      : 'Somme des écarts depuis lundi. Un jour manqué compte +' + F.board.missed + ' %. Égalité : le chrono cumulé départage.';
+  }
+  async function syncFriends() {
+    var g = group();
+    F.board = null;
+    renderFriends();
+    if (!F.api || !g || S.mode !== 'daily' || !S.done) return;
+    try {
+      F.board = await api('POST', '/api/groups/' + g.code + '/scores', { player: player(), day: S.key, path: S.path, via: S.via, elapsed: S.elapsed });
+      fmsg('');
+    } catch (e) { fmsg(e.message); }
+    renderFriends();
+  }
+  async function enter(promise) {
+    try {
+      var g = await promise;
+      fset('corr:group', JSON.stringify({ code: g.code, name: g.name }));
+      fmsg('');
+      syncFriends();
+    } catch (e) { fmsg(e.message); }
+  }
+  function pseudo() {
+    var v = $('fPseudo').value.trim();
+    if (!v) { fmsg('Choisis d’abord un pseudo.'); $('fPseudo').focus(); return null; }
+    fset('corr:pseudo', v);
+    return v;
+  }
+  $('fJoinBtn').addEventListener('click', function () {
+    var p = pseudo(), c = $('fCode').value.trim().toUpperCase();
+    if (!p) return;
+    if (!/^[A-Z0-9]{6}$/.test(c)) { fmsg('Le code fait 6 caractères.'); $('fCode').focus(); return; }
+    enter(api('POST', '/api/groups/' + c + '/join', { player: player(), pseudo: p }));
+  });
+  $('fCreate').addEventListener('click', function () {
+    var p = pseudo(), n = $('fName').value.trim();
+    if (!p) return;
+    if (!n) { fmsg('Donne un nom au groupe.'); $('fName').focus(); return; }
+    enter(api('POST', '/api/groups', { player: player(), pseudo: p, name: n }));
+  });
+  $('fLeave').addEventListener('click', function () { fset('corr:group', null); F.board = null; fmsg('Tu as quitté le groupe sur ce téléphone.'); renderFriends(); });
+  $('fShare').addEventListener('click', async function () {
+    var g = group(), text = 'Rejoins mon groupe « ' + g.name + ' » sur Correspondance : code ' + g.code + '\n' + location.origin + location.pathname;
+    try {
+      if (navigator.share) await navigator.share({ text: text });
+      else { await navigator.clipboard.writeText(text); fmsg('Invitation copiée.'); }
+    } catch (e) {}
+  });
+  $('fTabDay').addEventListener('click', function () { F.tab = 'day'; renderFriends(); });
+  $('fTabWeek').addEventListener('click', function () { F.tab = 'week'; renderFriends(); });
+  fetch('/api/health').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    F.api = !!(j && j.ok); syncFriends();
+  }).catch(function () {});
   $('m-train').addEventListener('click', function () { start('train'); });
 
   start('daily');

@@ -2,9 +2,11 @@
   "name": "correspondance",
   "private": true,
   "scripts": {
-    "test": "npm run test:gen && npm run test:e2e",
+    "test": "npm run test:gen && npm run test:server && npm run test:e2e",
     "test:gen": "node tests/generator.test.js",
-    "test:e2e": "playwright test"
+    "test:server": "node tests/server.test.mjs",
+    "test:e2e": "playwright test",
+    "dev": "DEV=1 PORT=8777 node server/server.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0"
