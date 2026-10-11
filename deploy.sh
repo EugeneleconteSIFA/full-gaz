@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Publie Correspondance sur https://correspondance.kernse.fr (VPS partagé).
-# Page : /srv/correspondance/site ; API du classement : service correspondance-api (/srv/correspondance/api).
+# Publie La Traverse sur https://latraverse.kernse.fr (VPS partagé).
+# Page : /srv/latraverse/site ; API du classement : service latraverse-api (/srv/latraverse/api).
 #   ./deploy.sh            → tests du générateur, puis envoi de la page et du serveur, redémarrage de l'API
 #   ./deploy.sh --server   → en plus : service systemd et config nginx (première installation)
 set -euo pipefail
@@ -13,15 +13,15 @@ SSH="ssh -i $KEY -o IdentitiesOnly=yes"
 node tests/generator.test.js 120 >/dev/null
 node tests/server.test.mjs >/dev/null
 
-$SSH "$HOST" 'mkdir -p /srv/correspondance/site /srv/correspondance/api/server'
-rsync -az -e "$SSH" correspondance.html "$HOST:/srv/correspondance/site/"
-rsync -az -e "$SSH" server/server.mjs "$HOST:/srv/correspondance/api/server/"
+$SSH "$HOST" 'mkdir -p /srv/latraverse/site /srv/latraverse/api/server'
+rsync -az -e "$SSH" correspondance.html "$HOST:/srv/latraverse/site/"
+rsync -az -e "$SSH" server/server.mjs "$HOST:/srv/latraverse/api/server/"
 
 if [[ "${1:-}" == "--server" ]]; then
-  rsync -az -e "$SSH" server/correspondance-api.service "$HOST:/etc/systemd/system/"
-  rsync -az -e "$SSH" server/nginx.conf "$HOST:/etc/nginx/sites-available/correspondance.kernse.fr"
-  $SSH "$HOST" 'ln -sf /etc/nginx/sites-available/correspondance.kernse.fr /etc/nginx/sites-enabled/ \
-    && systemctl daemon-reload && systemctl enable --now correspondance-api && nginx -t && systemctl reload nginx'
+  rsync -az -e "$SSH" server/latraverse-api.service "$HOST:/etc/systemd/system/"
+  rsync -az -e "$SSH" server/nginx.conf "$HOST:/etc/nginx/sites-available/latraverse.kernse.fr"
+  $SSH "$HOST" 'ln -sf /etc/nginx/sites-available/latraverse.kernse.fr /etc/nginx/sites-enabled/ \
+    && systemctl daemon-reload && systemctl enable --now latraverse-api && nginx -t && systemctl reload nginx'
 fi
-$SSH "$HOST" 'systemctl restart correspondance-api && systemctl is-active correspondance-api'
-echo "En ligne : https://correspondance.kernse.fr"
+$SSH "$HOST" 'systemctl restart latraverse-api && systemctl is-active latraverse-api'
+echo "En ligne : https://latraverse.kernse.fr"

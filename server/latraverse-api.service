@@ -1,0 +1,18 @@
+[Unit]
+Description=La Traverse - classement entre amis (latraverse.kernse.fr)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /srv/latraverse/api/server/server.mjs
+Environment=PORT=8160 SITE=/srv/latraverse/site
+User=www-data
+Group=www-data
+StateDirectory=latraverse-api
+Restart=always
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
