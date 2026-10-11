@@ -22,7 +22,7 @@ const MISSED = 50; // écart compté pour un jour non joué dans le classement d
 
 // --- Générateur : le bloc GEN de la page, évalué tel quel.
 function loadGen() {
-  const html = fs.readFileSync(path.join(SITE, 'correspondance.html'), 'utf8');
+  const html = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
   const a = html.indexOf('/*GEN-START*/'), b = html.indexOf('/*GEN-END*/');
   return new Function(html.slice(a, b) + ';return { generate, NET_VERSION, NONE };')();
 }
@@ -129,9 +129,10 @@ async function handle(req, res) {
   const url = new URL(req.url, 'http://x');
   // En local (DEV=1), le serveur sert aussi la page ; en production c'est nginx.
   if (process.env.DEV && !url.pathname.startsWith('/api/')) {
-    const f = url.pathname === '/' ? 'correspondance.html' : url.pathname.slice(1);
-    if (f !== 'correspondance.html') { res.writeHead(404); return res.end(); }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    const f = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const TYPES = { 'index.html': 'text/html; charset=utf-8', 'favicon.svg': 'image/svg+xml', 'icon-180.png': 'image/png', 'og.png': 'image/png' };
+    if (!TYPES[f]) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': TYPES[f] });
     return res.end(fs.readFileSync(path.join(SITE, f)));
   }
   const ip = req.headers['x-real-ip'] || req.socket.remoteAddress;

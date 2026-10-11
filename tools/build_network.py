@@ -1,6 +1,6 @@
 """Construit NODE_DEF / EDGE_DEF à partir du GTFS Ilévia (transport.data.gouv.fr, jeu « Réseau urbain ilévia »).
 
-Usage : python3 tools/build_network.py <dossier_gtfs_dézippé> [--write correspondance.html]
+Usage : python3 tools/build_network.py <dossier_gtfs_dézippé> [--write index.html]
 
 - Les lieux du jeu sont des stations réelles choisies à la main (NODES) ; les stations intermédiaires
   sont regroupées dans le temps de trajet, lu dans les horaires GTFS (voyage le plus fréquent, sens 0).

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'correspondance.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const a = html.indexOf('/*GEN-START*/'), b = html.indexOf('/*GEN-END*/');
 assert(a >= 0 && b > a, 'bloc GEN introuvable');
 const G = new Function(html.slice(a, b) +

@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   errors = [];
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/correspondance.html');
+  await page.goto('/index.html');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 });
@@ -53,7 +53,7 @@ test('partie complète du jour : optimal, partage, sauvegarde', async ({ page })
   await expect(page.locator('#actions')).toBeHidden();
   await expect(page.locator('#pct')).toHaveText('0 %');
   const share = await page.locator('#shareText').textContent();
-  expect(share).toMatch(/^Correspondance n°\d+/);
+  expect(share).toMatch(/^La Traverse n°\d+/);
   expect(share).toContain('Trajet optimal');
   expect(share).toMatch(/^[🟩]+$/mu);
   expect(share).not.toContain(opt.name);

@@ -7,7 +7,7 @@ import http from 'node:http';
 
 process.env.STATE_DIRECTORY = fs.mkdtempSync(path.join(os.tmpdir(), 'corr-'));
 const { handle } = await import('../server/server.mjs');
-const vm = new Function(fs.readFileSync(new URL('../correspondance.html', import.meta.url), 'utf8')
+const vm = new Function(fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
   .split('/*GEN-START*/')[1].split('/*GEN-END*/')[0] + ';return { generate };')();
 
 const srv = http.createServer((q, r) => handle(q, r)).listen(0);
