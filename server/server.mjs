@@ -24,7 +24,7 @@ const MISSED = 50; // écart compté pour un jour non joué dans le classement d
 function loadGen() {
   const html = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
   const a = html.indexOf('/*GEN-START*/'), b = html.indexOf('/*GEN-END*/');
-  return new Function(html.slice(a, b) + ';return { generate, NET_VERSION, NONE };')();
+  return new Function(html.slice(a, b) + ';return { generate, NET_VERSION, NONE, stepCost };')();
 }
 const G = loadGen();
 const cache = new Map();
@@ -41,7 +41,7 @@ export function scoreOf(day, p, via) {
   for (let k = 1; k < p.length; k++) {
     const a = P.adj[p[k - 1]]?.find((x) => x.e === via[k - 1]);
     if (!a || a.to !== p[k]) return null;
-    cost += a.w + (a.li !== li ? P.board[a.mode] : 0); li = a.li;
+    cost += a.w + G.stepCost(P, li, a); li = a.li;
   }
   return { cost, opt: P.opt, pct: Math.round((cost - P.opt) / P.opt * 100) };
 }

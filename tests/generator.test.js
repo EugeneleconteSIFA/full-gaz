@@ -8,7 +8,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const a = html.indexOf('/*GEN-START*/'), b = html.indexOf('/*GEN-END*/');
 assert(a >= 0 && b > a, 'bloc GEN introuvable');
 const G = new Function(html.slice(a, b) +
-  ';return { generate, baseNet, instantiate, analyse, EVENTS, LK, LMODE, NODE_DEF, EDGE_DEF, NET_VERSION, NONE, NL };')();
+  ';return { generate, baseNet, instantiate, analyse, EVENTS, LK, LMODE, NODE_DEF, EDGE_DEF, NET_VERSION, NONE, NL, stepCost, transferCost, TRANSFER, BOARD_DEF };')();
 
 const DAYS = +process.argv[2] || 365;
 const MIN_VALID = 0.95;
@@ -90,6 +90,18 @@ check('la grille optimale respecte les critères quand ok', () => {
     assert(P.near >= 3 && P.near <= 40);
     assert(new Set(P.optEdges.map(e => P.edges[e].line)).size >= 2);
   });
+});
+
+check('correspondance : attente + délai selon le changement de véhicule', () => {
+  const P = { board: G.BOARD_DEF }, li = k => G.LK.indexOf(k);
+  const metro = { li: li('M2'), mode: 'metro' }, bus = { li: li('L5'), mode: 'bus' }, rue = { li: li('RUE'), mode: 'rue' };
+  assert.strictEqual(G.stepCost(P, G.NONE, metro), 3, 'première montée : attente seule');
+  assert.strictEqual(G.stepCost(P, li('M2'), metro), 0, 'même ligne : rien');
+  assert.strictEqual(G.stepCost(P, li('M1'), metro), 3 + G.TRANSFER.metro.metro, 'métro → métro');
+  assert.strictEqual(G.stepCost(P, li('M1'), bus), 4 + G.TRANSFER.metro.bus, 'métro → bus');
+  assert.strictEqual(G.stepCost(P, li('L1'), bus), 4 + G.TRANSFER.bus.bus, 'bus → bus');
+  assert.strictEqual(G.stepCost(P, li('RUE'), metro), 3, 'après la marche : attente seule');
+  assert.strictEqual(G.stepCost(P, li('M1'), rue), 0, 'descendre pour marcher : rien');
 });
 
 check('la version entre dans la graine', () => {

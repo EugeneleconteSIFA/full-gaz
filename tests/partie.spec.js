@@ -111,3 +111,20 @@ test('classement : créer un groupe, jouer, se voir classé', async ({ page }) =
   await expect(page.locator('#fNote')).toContainText('depuis lundi');
   await noHorizontalScroll(page);
 });
+
+test('recommencer la grille du jour après le résultat : hors classement', async ({ page }) => {
+  const opt = await optimal(page);
+  await play(page, opt);
+  await page.locator('#validate').tap();
+  const saved = await page.evaluate(() => JSON.stringify(localStorage));
+  await page.locator('#replay').tap();
+  await expect(page.locator('#m-train')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#sub')).toContainText('hors classement');
+  await expect(page.locator('#count')).toHaveText('1');
+  await expect(page.locator('#map')).toHaveClass(/focus/);
+  await play(page, opt);
+  await page.locator('#validate').tap();
+  await expect(page.locator('#pct')).toHaveText('0 %');
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).toBe(saved);
+  await noHorizontalScroll(page);
+});

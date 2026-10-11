@@ -228,6 +228,10 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
 #map .ln.L7 { stroke: var(--c-line-L7); } #map .ln.L90 { stroke: var(--c-line-L90); }
 #map .ln.L92 { stroke: var(--c-line-L92); }
 #map .ln.closed { opacity: .25; stroke-dasharray: 4 7; }
+#map.focus .ln:not(.near) { opacity: .22; }
+#map.focus .pill:not(.near) { opacity: .3; }
+#map.focus .ln.near { filter: drop-shadow(0 0 2px var(--c-map-ground)); }
+@media (prefers-reduced-motion: no-preference) { #map .ln, #map .pill { transition: opacity var(--t-ui) var(--ease-ui); } }
 #map .band { stroke: var(--c-accent); stroke-width: 22; stroke-linecap: round; opacity: 0; }
 #map .band.on { opacity: .32; }
 #map .optline { stroke: var(--c-ink); stroke-width: 5; stroke-linecap: round; stroke-dasharray: .1 11; opacity: 0; }
@@ -449,6 +453,7 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
       <pre id="shareText" tabindex="0"></pre>
       <div class="share-row">
         <button type="button" class="btn primary" id="copy">Copier le résultat</button>
+        <button type="button" class="btn" id="replay">Recommencer cette grille</button>
         <button type="button" class="btn" id="again"></button>
         <span class="copied" id="copied" role="status"></span>
       </div>
@@ -499,12 +504,23 @@ h1 { margin: 0; font: 700 23px/1 var(--font-title); letter-spacing: -.05em; over
 /* Version du réseau : à incrémenter dès que NODE_DEF, EDGE_DEF, EVENTS ou les règles de génération changent.
    Elle entre dans la graine et dans la clé de sauvegarde : un changement de réseau donne de nouvelles grilles du jour
    et ignore les résultats enregistrés avec l'ancien réseau. */
-var NET_VERSION = 'v3';
+var NET_VERSION = 'v4';
 var COLS = 10, ROWS = 6, CELL = 84, PAD = 48;
 var LK = ['M1', 'M2', 'L1', 'L5', 'L7', 'L90', 'L92', 'RUE'], NONE = 8, NL = 9;
 var LMODE = { M1: 'metro', M2: 'metro', L1: 'bus', L5: 'bus', L7: 'bus', L90: 'bus', L92: 'bus', RUE: 'rue' };
 var LNAME = { M1: 'M1', M2: 'M2', L1: 'Liane 1', L5: 'Liane 5', L7: 'Liane 7', L90: 'Liane 90', L92: 'Liane 92', RUE: 'À pied' };
 var BOARD_DEF = { metro: 3, bus: 4, rue: 0 };
+/* Délai de correspondance : s'ajoute à l'attente quand on quitte un véhicule pour en prendre un autre
+   (rejoindre l'autre quai, remonter en surface). Rien après la marche : le trajet à pied le compte déjà. */
+var TRANSFER = { metro: { metro: 2, bus: 3 }, bus: { metro: 3, bus: 2 } };
+function transferCost(li, a) {
+  if (li === NONE || a.li === li) return 0;
+  var t = TRANSFER[LMODE[LK[li]]];
+  return (t && t[a.mode]) || 0;
+}
+/* Coût d'entrée sur une liaison depuis la ligne li : rien si on reste sur la même ligne,
+   sinon l'attente de la ligne prise plus l'éventuel délai de correspondance. */
+function stepCost(P, li, a) { return a.li === li ? 0 : P.board[a.mode] + transferCost(li, a); }
 
 /*NET-START*/
 /* Généré par tools/build_network.py à partir du GTFS Ilévia. Ne pas modifier à la main. */
@@ -673,7 +689,7 @@ function dijkstraS(P, src, sli, hw) {
     var node = (u / NL) | 0, li = u % NL, list = P.adj[node];
     for (var k = 0; k < list.length; k++) {
       var a = list[k];
-      var c = d[u] + a.w + (a.li !== li ? P.board[a.mode] : 0) + hw;
+      var c = d[u] + a.w + stepCost(P, li, a) + hw;
       var ns = a.to * NL + a.li;
       if (c < d[ns]) { d[ns] = c; pr[ns] = u; pe[ns] = a.e; }
     }
@@ -707,7 +723,7 @@ function countNear(P, lb, limit, cap) {
     for (var k = 0; k < l.length; k++) {
       var a = l[k];
       if (seen[a.to]) continue;
-      var nc = cost + a.w + (a.li !== li ? P.board[a.mode] : 0);
+      var nc = cost + a.w + stepCost(P, li, a);
       if (nc + lb[a.to] > limit) continue;
       seen[a.to] = true; dfs(a.to, a.li, nc); seen[a.to] = false;
     }
@@ -802,11 +818,12 @@ function generate(key) {
     S.timer = setInterval(function () { S.elapsed = Date.now() - S.t0; $('chrono').textContent = fmt(S.elapsed); }, 250);
   }
 
-  function start(mode) {
+  function start(mode, key) {
     stopTimer();
     var now = new Date();
     S.mode = mode;
-    S.key = mode === 'daily' ? ymd(now) : 'train-' + Math.random().toString(36).slice(2, 8);
+    S.key = mode === 'daily' ? ymd(now) : key || 'train-' + Math.random().toString(36).slice(2, 8);
+    S.replay = mode !== 'daily' && S.key === ymd(now);
     S.P = generate(S.key);
     S.path = [S.P.s]; S.via = []; S.choose = null; S.done = false; S.t0 = 0; S.elapsed = 0; S.msg = '';
     if (mode === 'daily') {
@@ -816,13 +833,14 @@ function generate(key) {
     $('m-daily').setAttribute('aria-pressed', mode === 'daily');
     $('m-train').setAttribute('aria-pressed', mode !== 'daily');
     var d = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    $('sub').textContent = mode === 'daily' ? 'Puzzle n°' + dayNo(now) + ' · ' + d + ' · Lille' : 'Entraînement · grille au hasard · Lille';
+    $('sub').textContent = mode === 'daily' ? 'Puzzle n°' + dayNo(now) + ' · ' + d + ' · Lille'
+      : S.replay ? 'Entraînement · grille du jour rejouée, hors classement' : 'Entraînement · grille au hasard · Lille';
     var P = S.P;
     $('brief').innerHTML = 'Rejoins <span class="badge d">D</span> <strong>' + P.nodes[P.s].name + '</strong> jusqu’à <span class="badge a">A</span> <strong>' + P.nodes[P.t].name + '</strong> en un minimum de minutes.';
     $('notice').classList.toggle('alert', !!P.event);
     $('noticeTag').textContent = 'Info trafic';
     $('noticeText').textContent = P.event ? P.event.label : 'Trafic normal sur tout le réseau aujourd’hui.';
-    $('waitInfo').textContent = 'Les chiffres sont des minutes. Monter dans un métro ou un bus coûte une attente : métro ' + P.board.metro + ' min, bus ' + P.board.bus + ' min, rue 0 min.';
+    $('waitInfo').textContent = 'Les chiffres sont des minutes. Monter dans un métro ou un bus coûte une attente (métro ' + P.board.metro + ' min, bus ' + P.board.bus + ' min). Changer de véhicule ajoute une correspondance : métro → métro ' + TRANSFER.metro.metro + ' min, bus → bus ' + TRANSFER.bus.bus + ' min, entre métro et bus ' + TRANSFER.metro.bus + ' min. Rien après un trajet à pied.';
     drawMap();
     update();
     syncFriends();
@@ -926,9 +944,9 @@ function generate(key) {
   function evaluate(withPens) {
     var P = S.P, cost = 0, li = NONE, steps = [], pens = [];
     for (var k = 1; k < S.path.length; k++) {
-      var a = linkE(S.path[k - 1], S.via[k - 1]), b = a.li !== li ? P.board[a.mode] : 0;
-      cost += a.w + b; li = a.li;
-      steps.push({ a: a, board: b, from: S.path[k - 1], to: S.path[k] });
+      var a = linkE(S.path[k - 1], S.via[k - 1]), x = transferCost(li, a), b = stepCost(P, li, a) - x;
+      cost += a.w + b + x; li = a.li;
+      steps.push({ a: a, board: b, transfer: x, from: S.path[k - 1], to: S.path[k] });
       if (withPens) pens.push(cost + bestAt(dijkstraS(P, S.path[k], li, 0), P.t).val - P.opt);
     }
     return { cost: cost, steps: steps, pens: pens };
@@ -941,6 +959,10 @@ function generate(key) {
 
     svg.querySelectorAll('.band').forEach(function (el) { el.classList.toggle('on', onEdge.has(+el.dataset.e)); });
     svg.querySelectorAll('.pill').forEach(function (el) { el.classList.toggle('on', onEdge.has(+el.dataset.e)); });
+    // Pendant la partie, seules les liaisons depuis la station actuelle et le trajet déjà fait restent nets.
+    var near = new Set(S.done || atEnd ? [] : P.adj[cur].map(function (a) { return a.e; }));
+    svg.classList.toggle('focus', !S.done && !atEnd);
+    svg.querySelectorAll('.ln, .pill').forEach(function (el) { var e = +el.dataset.e; el.classList.toggle('near', near.has(e) || onEdge.has(e)); });
     svg.querySelectorAll('.optline').forEach(function (el) { el.classList.toggle('show', S.done); });
     svg.querySelectorAll('.sta').forEach(function (g) {
       var id = +g.dataset.id;
@@ -964,6 +986,7 @@ function generate(key) {
     else {
       chip('stop first', P.nodes[S.path[0]].name);
       ev.steps.forEach(function (s) {
+        if (s.transfer > 0) chip('wait', 'correspondance ' + s.transfer + ' min');
         if (s.board > 0) chip('wait', 'attente ' + s.board + ' min');
         chip('leg ' + LK[s.a.li], LNAME[LK[s.a.li]] + (P.edges[s.a.e].name ? ' · ' + P.edges[s.a.e].name : '') + ' · ' + s.a.w + ' min');
         chip('stop', P.nodes[s.to].name);
@@ -986,15 +1009,15 @@ function generate(key) {
       var box = $('chooseOpts');
       box.textContent = '';
       links(cur, S.choose).forEach(function (a) {
-        var b = document.createElement('button'), wait = a.li !== li ? P.board[a.mode] : 0, k = LK[a.li];
+        var b = document.createElement('button'), corr = transferCost(li, a), wait = stepCost(P, li, a) - corr, k = LK[a.li];
         b.type = 'button'; b.className = 'opt';
-        b.setAttribute('aria-label', LNAME[k] + (P.edges[a.e].name ? ' · ' + P.edges[a.e].name : '') + ' · ' + a.w + ' min' + (wait ? ' + attente ' + wait : ''));
+        b.setAttribute('aria-label', LNAME[k] + (P.edges[a.e].name ? ' · ' + P.edges[a.e].name : '') + ' · ' + a.w + ' min' + (corr ? ' + correspondance ' + corr : '') + (wait ? ' + attente ' + wait : ''));
         var chip = document.createElement('span'), what = document.createElement('span'), st = document.createElement('strong'),
             sm = document.createElement('small'), tm = document.createElement('span');
         chip.className = 'chip ' + k; chip.textContent = k === 'RUE' ? 'Pied' : k.replace(/^L/, 'L');
         what.className = 'what'; st.textContent = LNAME[k] + (P.edges[a.e].name ? ' · ' + P.edges[a.e].name : '');
-        sm.textContent = a.w + ' min de trajet' + (wait ? ' + ' + wait + ' min d’attente' : ', sans attente');
-        tm.className = 'time'; tm.textContent = (a.w + wait) + ' min';
+        sm.textContent = a.w + ' min de trajet' + (corr ? ' + ' + corr + ' min de correspondance' : '') + (wait ? ' + ' + wait + ' min d’attente' : (corr ? '' : ', sans attente'));
+        tm.className = 'time'; tm.textContent = (a.w + wait + corr) + ' min';
         what.appendChild(st); what.appendChild(sm);
         b.appendChild(chip); b.appendChild(what); b.appendChild(tm);
         b.addEventListener('click', function () { go(S.choose, a.e); });
@@ -1105,6 +1128,8 @@ function generate(key) {
   $('validate').addEventListener('click', validate);
   $('copy').addEventListener('click', copy);
   $('again').addEventListener('click', function () { start('train'); window.scrollTo(0, 0); });
+  // Rejouer la même grille : en entraînement, le résultat du jour et le classement restent inchangés.
+  $('replay').addEventListener('click', function () { start('train', S.key); window.scrollTo(0, 0); });
   $('m-daily').addEventListener('click', function () { if (S.mode !== 'daily') start('daily'); });
 
   /* Classement entre amis : actif seulement si l'API répond (page hébergée sur le serveur du jeu). */
